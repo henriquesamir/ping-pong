@@ -19,9 +19,9 @@
     <script>
         const canvasEl = document.querySelector("canvas"),
             canvasCtx = canvasEl.getContext("2d")
-            gapX = 10
+        const gapX = 10
 
-        const mouse = {x: 0, y: 0}
+        const mouse = { x: 0, y: 0 }
 
         const field = {
             w: window.innerWidth,
@@ -30,7 +30,7 @@
                 // Desenha o campo
                 canvasCtx.fillStyle = "#286047"
                 canvasCtx.fillRect(0, 0, this.w, this.h)
-            }
+            },
         }
 
         const line = {
@@ -38,11 +38,11 @@
             h: field.h,
             draw: function () {
                 // Desenha a linha central
-                    canvasCtx.fillStyle = "#ffffff"
-                    canvasCtx.fillRect(
+                canvasCtx.fillStyle = "#ffffff"
+                canvasCtx.fillRect(
                     field.w / 2 - this.w / 2,
                     0,
-                    line.w,
+                    this.w,
                     this.h)
             }
         }
@@ -53,19 +53,19 @@
             w: line.w,
             h: 200,
             _move: function () {
-                this.y = mouse.y - this.h/2 // Deixa o mouse centralizado
+                this.y = mouse.y - this.h / 2 // Deixa o mouse centralizado
             },
             draw: function () {
                 // Desenha a raquete esquerda
                 canvasCtx.fillStyle = "#ffffff "
                 canvasCtx.fillRect(this.x, this.y, this.w, this.h)
                 this._move()
-            }
+            },
         }
 
         const rightPaddle = {
             x: field.w - line.w - gapX,
-            y: 100,
+            y: 0,
             w: line.w,
             h: 200,
             _move: function () {
@@ -77,13 +77,19 @@
                 canvasCtx.fillRect(this.x, this.y, this.w, this.h)
 
                 this._move()
-            }
+            },
         }
 
         const score = {
-            human: 1,
-            computer: 2,
-            draw: function (){
+            human: 0,
+            computer: 0,
+            increaseHuman: function () {
+                this.human++
+            },
+            increaseComputer: function () {
+                this.computer++
+            },
+            draw: function () {
                 // Desenha o placar
                 canvasCtx.fillStyle = "#ffffff"
                 canvasCtx.font = "bold 72px Arial"
@@ -92,17 +98,67 @@
                 canvasCtx.fillStyle = '#01341D'
                 canvasCtx.fillText(this.human, field.w / 4, 50)
                 canvasCtx.fillText(this.computer, field.w / 4 + field.w / 2, 50)
-            }
+            },
         }
 
         const ball = {
-            x: 300,
-            y: 200,
+            x: 0,
+            y: 0,
             r: 20,
             speed: 5,
+            directionX: 1,
+            directionY: 1,
+
+            _calcPosition: function () {
+                // Verifica as condições para pontuação do jogador 1
+                if (this.x > field.w - this.r - rightPaddle.w - gapX) {
+                    // Verifica se a raquete direita está na posição y da bola
+                    if (this.y + this.r > rightPaddle.y &&
+                        this.y - this.r < rightPaddle.y + rightPaddle.h) {
+                        // "Rebate" a bola invertendo o sinal no eixo X
+                        this._reverseX()
+                    } else {
+                        // Pontua jogador 1
+                        score.increaseHuman()
+                        this._pointUp()
+                    }
+                }
+
+                // Verifica as condições para pontuação do jogador 2
+                if (this.x < this.r + leftPaddle.w + gapX) {
+                    // Verifica se a raquete esquerda está na posição y da bola
+                    if (this.y + this.r > leftPaddle.y &&
+                        this.y - this.r < leftPaddle.y + leftPaddle.h) {
+                        // "Rebate" a bola invertendo o sinal no eixo X
+                        this._reverseX()
+                    } else {
+                        // Pontua o jogador 2
+                        score.increaseComputer()
+                        this._pointUp()
+                    }
+                }
+
+                // Delimitação das laterais do campo
+                if (
+                    (this.y - this.r < 0 && this.directionY < 0) ||
+                    (this.y > field.h - this.r && this.directionY > 0)) {
+                    // "Rebate" a bola invertendo o sinal do eixo Y
+                    this._reverseY()
+                }
+            },
+            _reverseX: function () {
+                this.directionX *= -1
+            },
+            _reverseY: function () {
+                this.directionY *= -1
+            },
+            _pointUp: function () {
+                this.x = field.w / 2
+                this.y = field.h / 2
+            },
             _move: function () {
-                this.x += 1 * this.speed
-                this.y += 1 * this.speed
+                this.x += this.directionX * this.speed
+                this.y += this.directionY * this.speed
             },
             draw: function () {
                 // Desenha a bolinha
@@ -111,8 +167,9 @@
                 canvasCtx.arc(this.x, this.y, this.r, 0, 2 * Math.PI, false)
                 canvasCtx.fill()
 
+                this._calcPosition()
                 this._move()
-            }
+            },
         }
 
         function setup() {
@@ -151,7 +208,7 @@
         main()
 
         // Adiciona a interação do mouse
-        canvasEl.addEventListener("mousemove", function(e) {
+        canvasEl.addEventListener("mousemove", function (e) {
             mouse.x = e.pageX
             mouse.y = e.pageY
         })
